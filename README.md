@@ -41,7 +41,6 @@ authservice.cpp
 database.cpp
 hod.cpp
 ipenaltyStrategy.cpp
-irepository.cpp
 lecturer.cpp
 moderationservice.cpp
 password.cpp
@@ -61,6 +60,9 @@ courseRepo.cpp
 assignment.cpp
 assignRepo.cpp
 userrecord.cpp
+
+Main
+main.cpp
 
 CMake
 cMakeLists.txt
