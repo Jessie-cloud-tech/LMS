@@ -21,6 +21,15 @@ submissionRepo.h
 submissionservice.h
 user.h
 userRepo.h
+course.h
+extension.h
+department.h
+enrollment.h
+input.h
+courseRepo.h
+assignment.h
+assignRepo.h
+userrecord.h
 
 SRC
 #contains cpp files
@@ -32,7 +41,6 @@ authservice.cpp
 database.cpp
 hod.cpp
 ipenaltyStrategy.cpp
-irepository.cpp
 lecturer.cpp
 moderationservice.cpp
 password.cpp
@@ -43,3 +51,24 @@ submissionRepo.cpp
 submissionservice.cpp
 user.cpp
 userRepo.cpp
+course.cpp
+extension.cpp
+department.cpp
+enrollment.cpp
+input.cpp
+courseRepo.cpp
+assignment.cpp
+assignRepo.cpp
+userrecord.cpp
+
+Main
+main.cpp
+
+CMake
+cMakeLists.txt
+
+Compilation and building
+g++ -std=c++17 -Wall -Wextra -Iinclude (Get-ChildItem src\*.cpp).FullName main.cpp -o lms.exe -lsqlite3 -lsodium
+.\lms.exe
+cmake --build build
+.\build\LMS.exe
