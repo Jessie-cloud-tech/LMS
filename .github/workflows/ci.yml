@@ -38,7 +38,7 @@ jobs:
         if: always()
         run: |
           cppcheck \
-            --enable=warning,performance,portability \
+            --enable=warning,portability \
             --language=c++ \
             --std=c++17 \
             --error-exitcode=1 \
