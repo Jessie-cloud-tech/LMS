@@ -43,7 +43,12 @@ Analysis completed successfully across all 33 files.
 **Portability findings:** 0
 
 ## 5. Findings and Corrections
-    0
+| Findings         | Action
+|------------------|-----------
+|Genuine errors    | Rectify source code
+|Warnings          |fix where required
+|False positives   |document and suppress
+|Harmless findings |explain and document 
 
 ### Suppression Management
 
