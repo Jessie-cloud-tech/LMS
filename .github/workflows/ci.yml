@@ -1,0 +1,77 @@
+
+name: LMS CI
+
+on: [push, pull_request]
+
+jobs:
+  build-test-and-analyse:
+    name: Build, Test and Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            g++ \
+            cppcheck \
+            gcovr
+
+      - name: Configure project
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DLMS_BUILD_TESTS=ON \
+            -DLMS_COVERAGE=ON
+
+      - name: Build LMS
+        run: cmake --build build --parallel 2
+
+      - name: Run automated tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Run Cppcheck
+        if: always()
+        run: |
+          cppcheck \
+            --enable=warning,performance,portability \
+            --language=c++ \
+            --std=c++17 \
+            --error-exitcode=1 \
+            -I include \
+            src tests main.cpp \
+            --xml --xml-version=2 \
+            2> cppcheck-report.xml
+
+      - name: Generate coverage report
+        if: always()
+        run: |
+          gcovr -r . \
+            --object-directory build \
+            --filter 'src/(authservice|auditservice|submissionservice|moderationservice|standardLinearPenaltyStrategy|ipenaltyStrategy|submission)\.cpp' \
+            --print-summary \
+            --html-details build/coverage.html \
+            --xml build/coverage.xml
+
+      - name: Enforce 70 percent line coverage
+        if: success()
+        run: |
+          gcovr -r . \
+            --object-directory build \
+            --filter 'src/(authservice|auditservice|submissionservice|moderationservice|standardLinearPenaltyStrategy|ipenaltyStrategy|submission)\.cpp' \
+            --fail-under-line 70
+
+      - name: Upload quality reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LMS-quality-reports
+          if-no-files-found: warn
+          path: |
+            cppcheck-report.xml
+            build/coverage.html
+            build/coverage.xml
