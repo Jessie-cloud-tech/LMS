@@ -23,7 +23,7 @@ string secondsToText(long long seconds) {
     time_t t = (time_t)seconds;
     tm* parts = localtime(&t);
     char buffer[32];
-    strftime(buffer, sizeof buffer, "%Y-%m-%d %H:%M", parts);
+    strftime(buffer, sizeof (buffer),"%d/%m/%Y %H:%M", parts);
     return string(buffer);
 }
 
@@ -31,11 +31,14 @@ string nowText() { return secondsToText(nowSeconds()); }
 
 long long toSeconds(string text) {
     int day, month, year, hour, minute;
+    int position = 0;
 
-    if (sscanf(text.c_str(), "%d-%d-%d %d:%d",
-               &day, &month, &year, &hour, &minute) != 5) {
-        throw runtime_error("Wrong date format. Use DD-MM-YYYY HH:MM (example: 30-11-2026 14:00)");
+    if (sscanf(text.c_str(), "%d/%d/%d %d:%d%n",
+               &day, &month, &year, &hour, &minute, &position) != 5
+        || text[position] != '\0') {
+        throw runtime_error("Wrong date format. Use DD/MM/YYYY HH:MM (example: 30/11/2026 14:00)");
     }
+
     tm t = {};
     t.tm_year = year - 1900;
     t.tm_mon = month - 1;
@@ -43,10 +46,18 @@ long long toSeconds(string text) {
     t.tm_hour = hour;
     t.tm_min = minute;
     t.tm_isdst = -1;
+
     time_t seconds = mktime(&t);
+
     // mktime turns impossible dates into real ones (31 Feb becomes 3 Mar)
-    if (year < 1970 || seconds == -1 || t.tm_mday != day || t.tm_mon != month - 1 || t.tm_hour != hour) {
+    if (year < 1970 || month < 1 || month > 12 ||
+        day < 1 || day > 31 || hour < 0 || hour > 23 ||
+        minute < 0 || minute > 59 || seconds == -1 ||
+        t.tm_mday != day || t.tm_mon != month - 1 ||
+        t.tm_year != year - 1900 || t.tm_hour != hour ||
+        t.tm_min != minute) {
         throw runtime_error("That date or time does not exist: " + text);
     }
+
     return (long long)seconds;
 }

@@ -31,7 +31,7 @@ void Lecturer::createAssign() {
     if (c.courseId == 0) throw runtime_error("Course not found.");
     a.title = readLine("Title");
     a.description = readLine("Description");
-    string deadline = readLine("Deadline (YYYY-MM-DD HH:MM)");
+    string deadline = readLine("Deadline (DD-MM-YYYY HH:MM)");
     a.deadline = secondsToText(toSeconds(deadline));     // checks that the date is real
     a.maxMark = readDouble("Maximum mark");
     if (a.title == "" || a.description == "") throw runtime_error("Title and description cannot be empty.");
@@ -78,7 +78,7 @@ void Lecturer::gradeWork() {
 
 void Lecturer::menu() {
     while (true) {
-        cout << "\n--- Lecturer: " << username << " ---\n";
+        cout << "\n Lecturer: " << username << " \n";
         cout << "1) View courses\n";
         cout << "2) Create assignment\n";
         cout << "3) Give a student an extension\n";

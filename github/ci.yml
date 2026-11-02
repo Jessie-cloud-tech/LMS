@@ -1,0 +1,47 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ python3 python3-pip
+          pip install gcovr
+
+      - name: Configure (with coverage)
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DLMS_COVERAGE=ON
+
+      - name: Build
+        run: cmake --build build -j 2
+
+      - name: Unit and integration tests
+        working-directory: build
+        run: ./lms_tests --gtest_output=xml:unit-results.xml
+
+      - name: System and acceptance tests
+        working-directory: build
+        run: python3 ../tests/system/run_system_tests.py ./lms
+
+      - name: Coverage of the business-logic layer (fails below 70%)
+        run: |
+          gcovr -r . --object-directory build \
+            --filter 'src/(authservice|auditservice|submissionservice|moderationservice|standardLinearPenaltyStrategy|ipenaltyStrategy|submission)\.cpp' \
+            --print-summary --fail-under-line 70 \
+            --html-details build/coverage.html --xml build/coverage.xml
+
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            build/coverage.html
+            build/coverage*.html
+            build/coverage.xml
+            build/unit-results.xml
+            build/system_test_results.txt
