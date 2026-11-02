@@ -40,8 +40,20 @@ Analysis completed successfully across all 33 files.
 
 **Performance findings:** 79
 
-## 5. Findings and Corrections
+**Portability findings:** 0
 
+## 5. Findings and Corrections
+    0
+
+### Suppression Management
+
+The project uses cppcheck-suppressions.txt to record
+specific Cppcheck findings that have been reviewed
+and intentionally suppressed.
+
+Suppressions are only added when justified.
+No warnings are suppressed merely to obtain a clean
+static analysis report.
 
 ## 6. Conclusion
 
