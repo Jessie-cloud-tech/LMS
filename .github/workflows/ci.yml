@@ -42,10 +42,9 @@ jobs:
             --language=c++ \
             --std=c++17 \
             --error-exitcode=1 \
+            --template="{file}:{line}: {severity}: {message} [{id}]" \
             -I include \
-            src tests main.cpp \
-            --xml --xml-version=2 \
-            2> cppcheck-report.xml
+            src tests main.cpp
 
       - name: Generate coverage report
         if: success()
