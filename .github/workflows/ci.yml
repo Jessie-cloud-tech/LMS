@@ -36,7 +36,7 @@ jobs:
 
       - name: Check Cppcheck version
         run: cppcheck --version
-        
+
       - name: Run Cppcheck
         if: always()
         run: |
@@ -51,7 +51,7 @@ jobs:
             2> cppcheck-report.xml
 
       - name: Generate coverage report
-        if: always()
+        if: success()
         run: |
           gcovr -r . \
             --object-directory build \
@@ -77,4 +77,4 @@ jobs:
           path: |
             cppcheck-report.xml
             build/coverage.html
-            build/coverage.xml
+            build/coverage.xml 
