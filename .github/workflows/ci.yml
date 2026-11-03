@@ -34,9 +34,6 @@ jobs:
       - name: Run automated tests
         run: ctest --test-dir build --output-on-failure
 
-      - name: Check Cppcheck version
-        run: cppcheck --version
-
       - name: Run Cppcheck
         if: always()
         run: |
