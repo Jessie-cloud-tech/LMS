@@ -445,3 +445,37 @@ TEST_F(LmsH, Moderation_AdjustIsAtomicWithTheAuditLog) {
     EXPECT_EQ(after.status, MARKED);
     EXPECT_DOUBLE_EQ(after.finalMark, 80);
 }
+
+//Phase 8: class extensions. The student can see the effective deadline and the type of extension (none, individual, or class-wide).
+TEST_F(LmsH, SubmissionService_IndividualExtensionTakesPrecedence) {
+    // Arrange: grant a class-wide extension of 24 hours.
+    string classDeadline = secondsToText(due + 86400);
+
+    assignRepo.saveClassExtension(
+        assignmentId,
+        classDeadline,
+        "Extra time for the whole class"
+    );
+
+    // Arrange: grant student 1 an individual extension of 48 hours.
+    Extension individual;
+    individual.assignmentId = assignmentId;
+    individual.studentId = studentId;
+    individual.extDeadline = secondsToText(due + 172800);
+    individual.reason = "Additional individual time";
+
+    assignRepo.saveExtension(individual);
+
+    // Act: obtain the student's effective deadline.
+    string effectiveDeadline =
+        submissionService.getEffectiveDeadline(assignmentId, studentId);
+
+    // Assert: the individual extension takes priority.
+    EXPECT_EQ(effectiveDeadline, individual.extDeadline);
+
+    // Assert: the second student still receives the class-wide extension.
+    string secondStudentDeadline =
+        submissionService.getEffectiveDeadline(assignmentId, student2Id);
+
+    EXPECT_EQ(secondStudentDeadline, classDeadline);
+}

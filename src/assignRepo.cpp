@@ -1,4 +1,5 @@
 #include "assignRepo.h"
+#include <sqlite3.h>
 using namespace std;
 
 static string COLUMNS = "assignment_id, course_id, title, description, deadline, max_mark";
@@ -31,6 +32,39 @@ bool AssignRepository::save(Assignment& a) {
         db->execute("UPDATE assignments SET course_id = ?, title = ?, description = ?, deadline = ?, max_mark = ? WHERE assignment_id = ?",
                     {to_string(a.courseId), a.title, a.description, a.deadline, to_string(a.maxMark), to_string(a.assignmentId)});
     }
+    return true;
+}
+// Phase 8: class extension 
+bool AssignRepository::saveClassExtension(
+    int assignmentId,
+    const string& extDeadline,
+    const string& reason
+) {
+    const char* sql =
+        "INSERT INTO ClassExtensions "
+        "(assignment_id, extended_deadline, reason) "
+        "VALUES (?, ?, ?) "
+        "ON CONFLICT(assignment_id) DO UPDATE SET "
+        "extended_deadline = excluded.extended_deadline, "
+        "reason = excluded.reason;";
+
+    db->execute(sql, {to_string(assignmentId), extDeadline, reason});
+    return true;
+}
+
+bool AssignRepository::findClassExtension(
+    int assignmentId,
+    string& extDeadline
+) {
+    vector<vector<string> > rows = db->query(
+        "SELECT extended_deadline FROM ClassExtensions WHERE assignment_id = ?",
+        {to_string(assignmentId)});
+
+    if (rows.empty() || rows[0].empty()) {
+        return false;
+    }
+
+    extDeadline = rows[0][0];
     return true;
 }
 

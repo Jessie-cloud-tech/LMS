@@ -14,51 +14,91 @@ SubmissionService::SubmissionService(SubmissionRepo* s, AssignRepository* a, Cou
     auditService = au;
     db = database;
 }
-
+ 
 int SubmissionService::validateDeadline(int assignmentId, int studentId) {
     Assignment a = assignRepo->findById(assignmentId);
-    if (a.assignmentId == 0) throw runtime_error("Assignment not found.");
 
-    string deadline = a.deadline;
-    Extension ext = assignRepo->findExtension(assignmentId, studentId);
-    if (ext.extensionId != 0) deadline = ext.extDeadline;     // the extension wins
+    if (a.assignmentId == 0) {
+        throw runtime_error("Assignment not found.");
+    }
+
+    // Uses individual extension first, then class extension,
+    // then the original assignment deadline.
+    string deadline = getEffectiveDeadline(assignmentId, studentId);
 
     long long due = toSeconds(deadline);
     long long now = nowSeconds();
-    if (now <= due) return 0;
-    return (int)((now - due + 86399) / 86400);                // a started day counts as a full day
+
+    if (now <= due) {
+        return 0;
+    }
+
+    // A started late day counts as a full day.
+    return static_cast<int>((now - due + 86399) / 86400);
 }
 
-string SubmissionService::uploadSubmission(Submission& sub) {
-    Assignment a = assignRepo->findById(sub.assignmentId);
+string SubmissionService::uploadSubmission(Submission& submission) {
+    Assignment a = assignRepo->findById(submission.assignmentId);
     if (a.assignmentId == 0) throw runtime_error("Assignment not found.");
-    if (!courseRepo->isEnrolled(sub.studentId, a.courseId)) throw runtime_error("You are not enrolled in this course.");
+    if (!courseRepo->isEnrolled(submission.studentId, a.courseId)) throw runtime_error("You are not enrolled in this course.");
 
-    ifstream file(sub.filePath.c_str());
-    if (!file) throw runtime_error("File not found: " + sub.filePath);
+    ifstream file(submission.filePath.c_str());
+    if (!file) throw runtime_error("File not found: " + submission.filePath);
 
-    int late = validateDeadline(sub.assignmentId, sub.studentId);
+    int late = validateDeadline(submission.assignmentId, submission.studentId);
     double penalty = penaltyStrategy->calculatePenalty(late);
     if (penalty >= 100) throw runtime_error("The submission window is closed (more than 3 days late).");
 
-    Submission old = subRepo->find(sub.assignmentId, sub.studentId);
+    Submission old = subRepo->find(submission.assignmentId, submission.studentId);
     if (old.submissionId != 0) {                              // this is a resubmission
         if (late > 0) throw runtime_error("You can only resubmit before the deadline.");
         if (old.status != SUBMITTED && old.status != LATE) throw runtime_error("Your work is already marked, so it cannot be replaced.");
     }
 
-    sub.submissionId = old.submissionId;      // 0 = new row, otherwise the old row is replaced
-    sub.subDate = nowText();
-    sub.daysLate = late;
-    sub.status = (late > 0) ? LATE : SUBMITTED;
-    sub.rawMark = -1;
-    sub.finalMark = -1;
-    sub.feedback = "";
-    subRepo->save(sub);
+    submission.submissionId = old.submissionId;      // 0 = new row, otherwise the old row is replaced
+    submission.subDate = nowText();
+    submission.daysLate = late;
+    submission.status = (late > 0) ? LATE : SUBMITTED;
+    submission.rawMark = -1;
+    submission.finalMark = -1;
+    submission.feedback = "";
+    subRepo->save(submission);
+
+    // Keep the generated database ID on the caller's object. The lookup is a
+    // defensive fallback in case a repository implementation inserts the row
+    // but does not propagate lastInsertId() to the supplied object.
+    if (submission.submissionId == 0) {
+        Submission saved = subRepo->find(submission.assignmentId, submission.studentId);
+        submission.submissionId = saved.submissionId;
+    }
+    if (submission.submissionId == 0) {
+        throw runtime_error("The submission could not be saved.");
+    }
 
     if (late > 0) return "Submitted LATE by " + to_string(late) + " day(s). A " + to_string((int)penalty) + "% penalty will be applied.";
     if (old.submissionId != 0) return "Your previous submission was replaced.";
     return "Submission received on time.";
+}
+string SubmissionService::getEffectiveDeadline(int assignmentId, int studentId) {
+    // Phase 8 precedence: an individual extension overrides a class extension.
+    Extension individual = assignRepo->findExtension(assignmentId, studentId);
+    if (individual.extensionId != 0 && !individual.extDeadline.empty()) {
+        return individual.extDeadline;
+    }
+
+    // If there is no individual extension, use the class-wide deadline.
+    string classDeadline;
+    if (assignRepo->findClassExtension(assignmentId, classDeadline) &&
+        !classDeadline.empty()) {
+        return classDeadline;
+    }
+
+    // Otherwise, use the assignment's original deadline.
+    Assignment assignment = assignRepo->findById(assignmentId);
+    if (assignment.assignmentId == 0) {
+        throw runtime_error("Assignment not found.");
+    }
+    return assignment.deadline;
 }
 
 void SubmissionService::gradeSubmission(int lecturerId, int submissionId, double mark, string feedback, string reason) {

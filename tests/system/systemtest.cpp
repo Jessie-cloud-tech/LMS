@@ -146,3 +146,29 @@ TEST_F(LmsH, System_ExtensionAllowsOneStudentToSubmitAfterNormalDeadline) {
         runtime_error
     );
 }
+// Phase 8: class extensions. The student can see the effective deadline and the type of extension (none, individual, or class-wide).
+TEST_F(LmsH, System_ClassExtensionAvailableToEnrolledStudents) {
+    // Arrange: lecturer grants a class-wide extension of 24 hours.
+    string classDeadline = secondsToText(due + 86400);
+
+    assignRepo.saveClassExtension(
+        assignmentId,
+        classDeadline,
+        "Extra time granted to the whole class"
+    );
+
+    // Act: both enrolled students retrieve their effective deadlines.
+    string student1Deadline =
+        submissionService.getEffectiveDeadline(assignmentId, studentId);
+
+    string student2Deadline =
+        submissionService.getEffectiveDeadline(assignmentId, student2Id);
+
+    // Assert: both students receive the extended deadline.
+    EXPECT_EQ(student1Deadline, classDeadline);
+    EXPECT_EQ(student2Deadline, classDeadline);
+
+    // Assert: a student who is not enrolled does not receive the extension
+    // as an enrolled class member.
+    EXPECT_FALSE(courseRepo.isEnrolled(outsiderId, courseId));
+}

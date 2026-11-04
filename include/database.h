@@ -14,6 +14,7 @@ public:
     void execute(string sql, vector<string> params = vector<string>());                     // INSERT, UPDATE, DELETE
     vector<vector<string> > query(string sql, vector<string> params = vector<string>());    // SELECT
     int lastInsertId();
+    void createTable(string tableName, vector<string> columns);
     void begin();       // start a group of changes
     void commit();      // keep all the changes
     void rollback();    // undo all the changes
