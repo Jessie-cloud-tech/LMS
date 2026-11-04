@@ -16,4 +16,13 @@ public:
     vector<Assignment> listByCourse(int courseId);
     bool saveExtension(Extension& extension);
     Extension findExtension(int assignmentId, int studentId);
+    bool saveClassExtension(
+    int assignmentId,
+    const string& extDeadline,
+    const string& reason
+    );
+    bool findClassExtension(
+        int assignmentId,
+        string& extDeadline
+    );
 };

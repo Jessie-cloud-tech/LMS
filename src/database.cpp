@@ -9,7 +9,7 @@ static sqlite3_stmt* prepare(sqlite3* db, string sql, vector<string> params) {
     if (sqlite3_prepare_v2(db, sql.c_str(), -1, &st, 0) != SQLITE_OK) {
         throw runtime_error(string("SQL error: ") + sqlite3_errmsg(db));
     }
-    for (int i = 0; i < (int)params.size(); i++) {
+    for (int i = 0; i < static_cast<int>(params.size()); i++) {
         sqlite3_bind_text(st, i + 1, params[i].c_str(), -1, SQLITE_TRANSIENT);
     }
     return st;
@@ -25,6 +25,16 @@ Database::Database(string fileName) {
 }
 
 Database::~Database() { sqlite3_close(db); }
+
+void Database::createTable(string tableName, vector<string> columns) {
+    string sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (";
+    for (int i = 0; i < static_cast<int>(columns.size()); i++) {
+        sql += columns[i];
+        if (i < static_cast<int>(columns.size()) - 1) sql += ", ";
+    }
+    sql += ")";
+    execute(sql);
+}
 
 void Database::execute(string sql, vector<string> params) {
     sqlite3_stmt* st = prepare(db, sql, params);
@@ -42,7 +52,8 @@ vector<vector<string> > Database::query(string sql, vector<string> params) {
         for (int i = 0; i < sqlite3_column_count(st); i++) {
             const unsigned char* text = sqlite3_column_text(st, i);
             if (text == 0) row.push_back("");
-            else row.push_back((const char*)text);
+            else
+                row.push_back((const char*)text);
         }
         rows.push_back(row);
     }
@@ -50,7 +61,9 @@ vector<vector<string> > Database::query(string sql, vector<string> params) {
     return rows;
 }
 
-int Database::lastInsertId() { return (int)sqlite3_last_insert_rowid(db); }
+int Database::lastInsertId() {
+     return (int)sqlite3_last_insert_rowid(db);
+    }
 void Database::begin() { execute("BEGIN"); }
 void Database::commit() { execute("COMMIT"); }
 void Database::rollback() { execute("ROLLBACK"); }
@@ -116,4 +129,13 @@ void Database::createTables() {
             "old_value TEXT NOT NULL, "
             "new_value TEXT NOT NULL, "
             "reason TEXT NOT NULL CHECK (length(trim(reason)) > 0))");
+
+// Phase 8: class extension
+    execute("CREATE TABLE IF NOT EXISTS ClassExtensions ("
+            "class_extension_id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "assignment_id INTEGER NOT NULL UNIQUE "
+            "REFERENCES assignments(assignment_id), "
+            "extended_deadline TEXT NOT NULL, "
+            "reason TEXT NOT NULL CHECK(length(trim(reason)) > 0)"
+            ")");
 }

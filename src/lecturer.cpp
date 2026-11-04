@@ -31,7 +31,7 @@ void Lecturer::createAssign() {
     if (c.courseId == 0) throw runtime_error("Course not found.");
     a.title = readLine("Title");
     a.description = readLine("Description");
-    string deadline = readLine("Deadline (DD-MM-YYYY HH:MM)");
+    string deadline = readLine("Deadline (DD/MM/YYYY HH:MM)");
     a.deadline = secondsToText(toSeconds(deadline));     // checks that the date is real
     a.maxMark = readDouble("Maximum mark");
     if (a.title == "" || a.description == "") throw runtime_error("Title and description cannot be empty.");
@@ -51,13 +51,41 @@ void Lecturer::grantExt() {
     if (!courseRepo->isEnrolled(e.studentId, a.courseId)) {
         throw runtime_error("That student is not enrolled in this course.");
     }
-    long long newTime = toSeconds(readLine("New deadline (YYYY-MM-DD HH:MM)"));
+    long long newTime = toSeconds(readLine("New deadline (DD/MM/YYYY HH:MM)"));
     if (newTime <= toSeconds(a.deadline)) throw runtime_error("The new deadline must be later than the old one.");
     e.extDeadline = secondsToText(newTime);
     e.reason = readLine("Reason for the extension");
     if (e.reason == "") throw runtime_error("A reason is required.");
     assignRepo->saveExtension(e);
     cout << "Extension saved.\n";
+}
+
+// Phase 8: grant one deadline extension to every student in the assignment's class.
+void Lecturer::grantClassExtension() {
+    int assignmentId = readInt("Assignment id");
+    Assignment assignment = assignRepo->findById(assignmentId);
+    if (assignment.assignmentId == 0) {
+        throw runtime_error("Assignment not found.");
+    }
+
+    string deadlineText = readLine("New deadline (DD/MM/YYYY HH:MM)");
+    long long newDeadline = toSeconds(deadlineText);
+    long long originalDeadline = toSeconds(assignment.deadline);
+    if (newDeadline <= originalDeadline) {
+        throw runtime_error("The class-wide deadline must be later than the original deadline.");
+    }
+
+    string reason = trim(readLine("Reason for the class-wide extension"));
+    if (reason.empty()) {
+        throw runtime_error("A reason is required for the class-wide extension.");
+    }
+
+    assignRepo->saveClassExtension(
+        assignmentId,
+        secondsToText(newDeadline),
+        reason
+    );
+    cout << "Class-wide extension granted successfully.\n";
 }
 
 void Lecturer::viewSubmissions() {
@@ -84,6 +112,7 @@ void Lecturer::menu() {
         cout << "3) Give a student an extension\n";
         cout << "4) View submissions of an assignment\n";
         cout << "5) Mark a submission\n";
+        cout << "6) Grant class-wide extension\n";
         cout << "0) Logout\n";
         int choice = readInt("Choose");
         if (choice == 0) return;
@@ -93,8 +122,10 @@ void Lecturer::menu() {
             else if (choice == 3) grantExt();
             else if (choice == 4) viewSubmissions();
             else if (choice == 5) gradeWork();
-            else cout << "Invalid choice.\n";
-        } catch (exception& e) {
+            else if (choice == 6) grantClassExtension();
+            else
+                cout << "Invalid choice.\n";
+        } catch (const exception& e) {
             cout << "Error: " << e.what() << "\n";
         }
     }

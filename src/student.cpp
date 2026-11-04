@@ -21,19 +21,53 @@ void Student::viewCourses() {
         cout << "  [" << c.courseId << "] " << c.courseCode << " - " << c.courseName << "\n";
     }
 }
-
+// Phase 8: class extensions. The student can see the effective deadline and the type of extension (none, individual, or class-wide).
 void Student::viewAssignments() {
     viewCourses();
+
     int courseId = readInt("Course id");
-    if (!courseRepo->isEnrolled(userId, courseId)) throw runtime_error("You are not enrolled in that course.");
+
+    if (!courseRepo->isEnrolled(userId, courseId))
+        throw runtime_error("You are not enrolled in that course.");
+
     vector<Assignment> list = assignRepo->listByCourse(courseId);
-    if (list.empty()) cout << "  (no assignments yet)\n";
+
+    if (list.empty())
+        cout << "  (no assignments yet)\n";
+
     for (Assignment a : list) {
-        string due = a.deadline;
-        Extension e = assignRepo->findExtension(a.assignmentId, userId);
-        if (e.extensionId != 0) due = e.extDeadline + " (your extended deadline)";
-        cout << "  [" << a.assignmentId << "] " << a.title << " | max mark " << a.maxMark
-             << " | due " << due << "\n      " << a.description << "\n";
+        // Get the effective deadline.
+        string due = submissionService->getEffectiveDeadline(
+            a.assignmentId, userId
+        );
+
+        // Determine the extension type.
+        Extension individual = assignRepo->findExtension(
+            a.assignmentId, userId
+        );
+
+        string extensionType = "None";
+
+        if (individual.extensionId != 0) {
+            extensionType = "Individual";
+        }
+        else {
+            string classDeadline;
+
+            if (assignRepo->findClassExtension(
+                    a.assignmentId, classDeadline)) {
+                extensionType = "Class-wide";
+            }
+        }
+
+        // Display assignment information.
+        cout << "\n  [" << a.assignmentId << "] " << a.title
+             << " | max mark " << a.maxMark << "\n";
+
+        cout << "      Original deadline: " << a.deadline << "\n";
+        cout << "      Effective deadline: " << due << "\n";
+        cout << "      Extension type: " << extensionType << "\n";
+        cout << "      " << a.description << "\n";
     }
 }
 

@@ -190,3 +190,27 @@ TEST_F(LmsH, AuditRepo_IsAppendOnlyInApplicationCode) {
 TEST_F(LmsH, AuditRepo_RejectsLogForMissingSubmission) {
     EXPECT_THROW(auditService.logAction(lecturerId, 9999, "a", "b", "reason"), runtime_error);
 }
+
+TEST_F(LmsH, AssignRepo_ClassExtensionIsSaved) {
+    string extDeadline = secondsToText(due + 86400);
+    string reason = "Extra time for the whole class";
+
+    // Save the class-wide extension.
+    assignRepo.saveClassExtension(
+        assignmentId,
+        extDeadline,
+        reason
+    );
+
+    // Retrieve the saved class-wide extension.
+    string savedDeadline;
+
+    bool found = assignRepo.findClassExtension(
+        assignmentId,
+        savedDeadline
+    );
+
+    // Verify that the extension was saved correctly.
+    EXPECT_TRUE(found);
+    EXPECT_EQ(savedDeadline, extDeadline);
+}

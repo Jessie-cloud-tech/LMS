@@ -37,10 +37,8 @@ jobs:
       - name: Generate coverage report
         if: always()
         run: |
-          gcovr -r . \
-            --object-directory build \
-            --filter 'src/(authservice|auditservice|submissionservice|moderationservice|standardLinearPenaltyStrategy|ipenaltyStrategy|submission)\.cpp' \
-            --print-summary \
+          mkdir -p build
+          gcovr -r . --object-directory build \
             --html-details build/coverage.html \
             --xml build/coverage.xml
 
@@ -61,3 +59,13 @@ jobs:
           path: |
             build/coverage.html
             build/coverage.xml
+
+
+
+      - name: Run Cppcheck
+        if: always()
+        run: |
+          cppcheck --enable=warning,portability \
+            --language=c++ --std=c++17 --error-exitcode=1 \
+            -I include src tests main.cpp \
+            --xml --xml-version=2 2> cppcheck-report.xml

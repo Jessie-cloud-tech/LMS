@@ -6,7 +6,7 @@
 #include "submissionservice.h"
 
 class Lecturer : public User {
-private:
+ private:
     CourseRepository* courseRepo;
     AssignRepository* assignRepo;
     SubmissionRepo* subRepo;
@@ -14,11 +14,12 @@ private:
 
     void viewCourses();
     void viewSubmissions();
-public:
+ public:
     Lecturer(UserRecord record, CourseRepository* courses, AssignRepository* assignments,
              SubmissionRepo* submissions, SubmissionService* submissionSvc);
-    void createAssign();    
-    void grantExt();        
-    void gradeWork();       
+    void createAssign();
+    void grantExt();
+   void grantClassExtension();  // Phase 8: class extension
+    void gradeWork();
     virtual void menu();
 };
